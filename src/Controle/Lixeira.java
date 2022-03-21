@@ -121,5 +121,6 @@ public class Lixeira {
     catch(Exception e) {
       System.out.println("Erro: " + e.getMessage());
     }
+        
   }
 }
