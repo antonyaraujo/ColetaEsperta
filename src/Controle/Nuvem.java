@@ -6,6 +6,7 @@ package Controle;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Date;
@@ -53,7 +54,11 @@ public class Nuvem {
         Scanner block = new Scanner(System.in);
         String b = block.nextLine();
         if(b == "S"){
-            
+            OutputStream encapsulamento = cliente.getOutputStream();
+            encapsulamento.write("bloquear".getBytes());
+            encapsulamento.flush();
+            encapsulamento.close();
+            cliente.close();
         }
         
         //saida.close();
