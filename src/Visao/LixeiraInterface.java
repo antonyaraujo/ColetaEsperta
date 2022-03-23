@@ -5,6 +5,9 @@
 package Visao;
 
 import Controle.Lixeira;
+import java.io.IOException;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
@@ -15,7 +18,7 @@ import javax.swing.UnsupportedLookAndFeelException;
  *
  * @author antony
  */
-public class LixeiraInterface extends javax.swing.JFrame {
+public class LixeiraInterface extends javax.swing.JFrame implements Observer{
     Lixeira l;    
 
     /**
@@ -23,18 +26,38 @@ public class LixeiraInterface extends javax.swing.JFrame {
      */
     public LixeiraInterface() {
         initComponents();
-        l = new Lixeira(10, 20, 0, 100);
-        nomeLixeira.setText("Lixeira " + l.getLatitude() + l.getLongitude());
-        cap_max.setText(String.valueOf(l.getCapacidadeMaxima()));
-        cap_atual.setText(String.valueOf(l.getCapacidadeAtual()));
-        porcentagem.setText(String.valueOf(l.getCapacidade()));
-        latitude.setText(String.valueOf(l.getLatitude()));
-        longitude.setText(String.valueOf(l.getLongitude()));
-        if(!l.isBloqueada()){
+        try {
+            l = new Lixeira(1, 10, 20, 0, 100);
+            nomeLixeira.setText("Lixeira " + l.getLatitude() + l.getLongitude());
+            cap_max.setText(String.valueOf(l.getCapacidadeMaxima()));
+            cap_atual.setText(String.valueOf(l.getCapacidadeAtual()));
+            porcentagem.setText(String.valueOf(l.getCapacidade()));
+            latitude.setText(String.valueOf(l.getLatitude()));
+            longitude.setText(String.valueOf(l.getLongitude()));
+            if(l.isBloqueada()){
+                adicionarLixo.setEnabled(false);
+                retirarLixo.setEnabled(false);
+            }
+            l.addObserver(this);        
+            //l.run();
+        } catch (IOException ex) {
+            Logger.getLogger(LixeiraInterface.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+    }    
+    
+    @Override
+    public void update(Observable lixo, Object estado){
+        if(lixo instanceof Lixeira){
+            Lixeira li = (Lixeira) lixo;
+            if(li.isBloqueada()){
             adicionarLixo.setEnabled(false);
             retirarLixo.setEnabled(false);
+        } else {
+                adicionarLixo.setEnabled(true);
+                retirarLixo.setEnabled(true);
+            }
         }
-            
     }
 
     /**
@@ -264,8 +287,7 @@ public class LixeiraInterface extends javax.swing.JFrame {
         int quantidade = Integer.parseInt(JOptionPane.showInputDialog("Insira a quantidade de lixo (m³)"));
         l.adicionarLixo(quantidade);
         cap_atual.setText(String.valueOf(l.getCapacidadeAtual()));
-        porcentagem.setText(String.valueOf(l.getCapacidade())+"%");
-        System.out.println("Fecha caralho");
+        porcentagem.setText(String.valueOf(l.getCapacidade())+"%");        
         JOptionPane.showMessageDialog(null, l.getCapacidadeAtual());        
     }//GEN-LAST:event_adicionarLixoActionPerformed
 

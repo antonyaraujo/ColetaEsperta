@@ -4,9 +4,14 @@
  */
 package Controle;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import static java.lang.Thread.sleep;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Date;
@@ -29,15 +34,41 @@ public class Nuvem {
         // o método accept() bloqueia a execução até que
         // o servidor receba um pedido de conexão
         Socket cliente = servidor.accept();        
-        System.out.println("Cliente conectado: " + cliente.getInetAddress().getHostAddress() + ":" + cliente.getPort());        
-        //ObjectOutputStream saida = new ObjectOutputStream(cliente.getOutputStream());
-        //saida.flush();
-        //saida.writeObject(new Date());
-        
+        System.out.println("Cliente conectado: " + cliente.getInetAddress().getHostAddress() + ":" + cliente.getPort());                
         
         // Recebimento de dados da lixeira
-        Scanner entrada = new Scanner(cliente.getInputStream());
-        while (entrada.hasNextLine()) {
+        //Scanner entrada = new Scanner(cliente.getInputStream());
+        InputStream input = cliente.getInputStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+                                    
+        OutputStream output = cliente.getOutputStream();
+        PrintWriter writer = new PrintWriter(output, true);
+                
+        String[] lixeira = reader.readLine().split(";");        
+        System.out.println("Lixeira " + lixeira[0] + lixeira[1]);
+        System.out.println("latitude: " + lixeira[0]);
+        System.out.println("longitude: " + lixeira[1]);
+        System.out.println("capacidade: " + lixeira[2]);
+        System.out.print("status: ");
+        if(lixeira[3] == "true") 
+            System.out.println("bloqueada");
+        else 
+            System.out.println("desbloqueada");
+             
+        writer.println("true");        
+        sleep(1000);
+        lixeira = reader.readLine().split(";");
+        System.out.println("Lixeira " + lixeira[0] + lixeira[1]);
+        System.out.println("latitude: " + lixeira[0]);
+        System.out.println("longitude: " + lixeira[1]);
+        System.out.println("capacidade: " + lixeira[2]);
+        System.out.print("status: ");
+        if(lixeira[3] == "true") 
+            System.out.println("bloqueada");
+        else 
+            System.out.println("desbloqueada");
+        
+        /*while (entrada.hasNextLine()) {
              String texto = entrada.nextLine();
              String[] lixeira = texto.split(";");
              System.out.println("Lixeira " + lixeira[0] + lixeira[1]);
@@ -49,20 +80,14 @@ public class Nuvem {
                  System.out.print("desbloqueada");
              else 
                  System.out.print("bloqueada");               
-        }
-        System.out.println("Deseja desbloquear? [S/N]");
-        Scanner block = new Scanner(System.in);
-        String b = block.nextLine();
-        if(b == "S"){
-            OutputStream encapsulamento = cliente.getOutputStream();
-            encapsulamento.write("bloquear".getBytes());
-            encapsulamento.flush();
-            encapsulamento.close();
-            cliente.close();
-        }
+        }       
         
-        //saida.close();
-        entrada.close();
+        ObjectOutputStream bloqueio = new ObjectOutputStream(cliente.getOutputStream());        
+        bloqueio.flush();
+        bloqueio.writeObject("true".getBytes());        
+        bloqueio.close();
+        
+        entrada.close();*/
         cliente.close();
       }
     }
