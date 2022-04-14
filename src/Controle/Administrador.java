@@ -7,7 +7,10 @@ package Controle;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import static java.lang.Math.round;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -16,22 +19,22 @@ import org.json.JSONObject;
  *
  * @author antony
  */
-public class Administrador {
-    private static String host;
-    private static int porta;
+public class Administrador {    
     
-    public Administrador(){
-        this.host = "localhost";
-        this.porta = 12345;
+    public Administrador(){        
     }
     
-    
+    /**
+     * Metodo que retorna a lista de lixeiras armazenadas no banco de dados 
+     * recuperando-as atraves de de uma conexao via rede
+     * @return lixeiras - Array que possui todas as lixeiras do banco de dados
+     */
     public static JSONArray getLixeiras(){
-        try(Socket nuvem = new Socket("localhost", 12345)){
+        try(Socket nuvem = new Socket("localhost", 40000)){
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
             json.put("cliente", "Administrador");
-            json.put("operacao", "GET");                       
+            json.put("operacao", "LISTAR_LIXEIRAS");                       
                        
             String dados = json.toString();
             nuvem_enviar.writeObject(dados);
@@ -53,13 +56,44 @@ public class Administrador {
     }
     
     /**
+     * Metodo que retorna as informacoes de um caminhao
+     * recuperando-o do banco de dados atraves de de uma conexao via rede
+     * @return lixeiras - Array que possui todas as lixeiras do banco de dados
+     */
+    public static JSONObject buscarCaminhao(int codigo){
+        try(Socket nuvem = new Socket("localhost", 40000)){
+            ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
+            JSONObject json = new JSONObject();
+            json.put("cliente", "Caminhao");
+            json.put("operacao", "BUSCAR");                       
+            json.put("codigo", codigo);
+                       
+            String dados = json.toString();
+            nuvem_enviar.writeObject(dados);
+            nuvem_enviar.flush();                
+            /** Recebimento dos dados da solicitação */
+            ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
+            dados = (String) nuvem_receber.readObject();            
+            JSONObject requisicao = new JSONObject(dados);            
+            //JSONArray lixeiras = requisicao.getJSONArray("Lixeira");            
+                                    
+            nuvem_receber.close();
+            nuvem_enviar.close();
+            nuvem.close();            
+            return requisicao;
+        }catch(Exception e) {            
+           System.out.println("Erro: " + e.getMessage());
+        }        
+        return null;
+    }
+    
+    /**
      * Retorna a capacidade da lixeira em porcentagem
      * @return 
      */
-    public static int getCapacidade(double atual, double maxima){        
-        double porcentagem = atual/maxima;        
-        int valor = (int) (porcentagem*100);
-        return valor;
+    public static double getCapacidade(double atual, double maxima){        
+        double porcentagem = atual/maxima;                
+        return round(porcentagem*100);
     }
     
     public static void exibirLixeiras(JSONArray lixeiras){
@@ -77,11 +111,11 @@ public class Administrador {
     
     public static String alterarEstadoLixeira(int codigo, boolean estado) throws IOException, ClassNotFoundException{
         String mensagem_confirmacao = "";
-        try(Socket nuvem = new Socket("localhost", 12345)){                                                
+        try(Socket nuvem = new Socket("localhost", 40000)){                                                
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
             json.put("cliente", "Administrador");
-            json.put("operacao", "POST");
+            json.put("operacao", "ALTERAR_ESTADO");
             json.put("bloqueada", estado);
             json.put("codigo", codigo);
             
@@ -115,7 +149,94 @@ public class Administrador {
         return mensagem_confirmacao;
     }
     
+    public void alterarOrdem(int codigoCaminhao, int codigoLixeira, int ordem) throws IOException, ClassNotFoundException{
+    String mensagem_confirmacao = "";
+        try(Socket nuvem = new Socket("localhost", 40000)){                                                
+            ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
+            JSONObject json = new JSONObject();
+            json.put("cliente", "Administrador");
+            json.put("operacao", "ALTERAR_ORDEM");
+            json.put("caminhao", codigoCaminhao);
+            json.put("lixeira", codigoLixeira);
+            json.put("ordem", ordem);
+            
+            String dados = json.toString();
+            nuvem_enviar.writeObject(dados);
+            nuvem_enviar.flush();                                    
+            /** Recebimento dos dados da solicitação */
+            ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
+            dados = (String) nuvem_receber.readObject();
+            JSONObject requisicao = new JSONObject(dados);            
+                                                                       
+            if(requisicao.getBoolean("resposta")){
+                
+            }
+            
+            nuvem_receber.close();
+            nuvem_enviar.close();
+            nuvem.close(); 
+                        
+        }        
+    }
+    
+    public static JSONArray listarLixeirasCaminhao(int codigo) throws IOException, ClassNotFoundException{
+        String mensagem_confirmacao = "";
+        try(Socket nuvem = new Socket("localhost", 40000)){                                                
+            ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
+            JSONObject json = new JSONObject();
+            json.put("cliente", "Caminhao");
+            json.put("operacao", "LISTAR_LIXEIRAS");
+            json.put("codigo", codigo);            
+            
+            String dados = json.toString();
+            nuvem_enviar.writeObject(dados);
+            nuvem_enviar.flush();                                    
+            /** Recebimento dos dados da solicitação */
+            ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
+            dados = (String) nuvem_receber.readObject();
+            JSONObject requisicao = new JSONObject(dados);            
+                                                                                   
+            JSONArray lixeiras = requisicao.getJSONArray("lixeiras");
+            
+            nuvem_receber.close();
+            nuvem_enviar.close();
+            nuvem.close(); 
+            return lixeiras;
+        }
+    }
+    
+    public static void alterarOrdem(JSONArray ordem, int codigoCaminhao) throws IOException, ClassNotFoundException{
+        try(Socket nuvem = new Socket("localhost", 40000)){                                                
+            ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
+            JSONObject json = new JSONObject();
+            json.put("cliente", "Caminhao");
+            json.put("operacao", "ALTERAR_ORDEM");
+            json.put("ordem", ordem);            
+            json.put("codigo", codigoCaminhao);            
+            
+            String dados = json.toString();
+            nuvem_enviar.writeObject(dados);
+            nuvem_enviar.flush();                                    
+            /** Recebimento dos dados da solicitação */
+            ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
+            dados = (String) nuvem_receber.readObject();
+            //JSONObject requisicao = new JSONObject(dados);            
+                                                                                   
+            //JSONArray lixeiras = requisicao.getJSONArray("lixeiras");
+            
+            nuvem_receber.close();
+            nuvem_enviar.close();
+            nuvem.close();             
+        }
+    }
+    
     public static void main(String[] args) throws IOException, ClassNotFoundException {
+        System.out.println("   ____      _      _        _____                     _        \n" +
+        "  / ___|___ | | ___| |_ __ _| ____|___ _ __   ___ _ __| |_ __ _ \n" +
+        " | |   / _ \\| |/ _ \\ __/ _` |  _| / __| '_ \\ / _ \\ '__| __/ _` |\n" +
+        " | |__| (_) | |  __/ || (_| | |___\\__ \\ |_) |  __/ |  | || (_| |\n" +
+        "  \\____\\___/|_|\\___|\\__\\__,_|_____|___/ .__/ \\___|_|   \\__\\__,_|\n" +
+        "                                      |_|                       ");
         int opcao = 1;
         Scanner leitor = new Scanner(System.in);
         do{
@@ -130,7 +251,7 @@ public class Administrador {
             opcao = leitor.nextInt();
             switch(opcao){
                 case 1:
-                    JSONArray lixeiras = getLixeiras();
+                    JSONArray lixeiras = getLixeiras();                    
                     exibirLixeiras(lixeiras);
                     break;
                 case 2:
@@ -144,6 +265,62 @@ public class Administrador {
                     codigoLixeira = leitor.nextInt();
                     confirmacao = alterarEstadoLixeira(codigoLixeira, false);
                     System.out.println(confirmacao);
+                    break;
+                case 4:
+                    System.out.println("Informe o código do caminhão");
+                    int codigoCaminhao = leitor.nextInt();
+                    JSONObject caminhao = buscarCaminhao(codigoCaminhao);
+                    System.out.println(caminhao.toString());
+                    System.out.println("Caminhão: "
+                            + "\nCódigo: " + caminhao.getInt("codigo")
+                            + "\nCapacidade: " + getCapacidade(caminhao.getDouble("capacidadeAtual"), caminhao.getDouble("capacidadeMaxima")) +"%"
+                            + "\nLista de Lixeiras:");                    
+                    if(caminhao.has("lixeiras")){
+                        JSONArray lixeirasCaminhao = caminhao.getJSONArray("lixeiras");                    
+                        for(int i = 0; i < lixeirasCaminhao.length(); i++){
+                            int atual = (Integer) lixeirasCaminhao.get(i);
+                            System.out.println(i+1 + ". Lixeira código: " + atual);
+                        }
+                    } else{
+                        System.out.println("O caminhão não possui lixeiras adicionadas");
+                    }
+                    break;
+                case 5:
+                    lixeiras = getLixeiras();
+                    System.out.println("Informe o código do caminhão");
+                    codigoCaminhao = leitor.nextInt();
+                    JSONArray lixeirasCaminhao = listarLixeirasCaminhao(codigoCaminhao);
+                    JSONArray lixeirasOrdenadas = new JSONArray();
+                    List<Object> codigos = new ArrayList();
+                    for(int i = 0; i < lixeiras.length(); i++){
+                        JSONObject atualLixeira =  (JSONObject) lixeiras.get(i);
+                        for(int j = 0; j < lixeirasCaminhao.length(); j++){
+                         int atualLixeiraCaminhao = (Integer) lixeirasCaminhao.get(j);
+                         if(atualLixeira.getInt("codigo") == atualLixeiraCaminhao){
+                             // Determina a ordem das lixeiras uma por uma                             
+                             boolean repetir = false;
+                             do{                                
+                             System.out.println("==== Lixeira ====");
+                             System.out.println("Código: " + atualLixeira.getInt("codigo"));
+                             double capacidade = getCapacidade(atualLixeira.getDouble("capacidadeAtual"), atualLixeira.getDouble("capacidadeMaxima"));
+                             System.out.println("Capacidade: " + capacidade + "%");
+                             System.out.println("Qual a ordem da lixeira?");                                                                                                                    
+                             int ordem = leitor.nextInt();                                
+                                if(codigos.contains(ordem)){
+                                    repetir = true;
+                                    System.out.println("Essa ordem já foi selecionada, tente novamente");
+                                } else {
+                                    codigos.add(ordem);
+                                    lixeirasOrdenadas.put(ordem, atualLixeira.getInt("codigo"));
+                                }
+                             }while(repetir);
+                             break;
+                         }
+                        }                        
+                    }                    
+                    lixeirasOrdenadas.remove(0);
+                    System.out.println(lixeirasOrdenadas.toString());
+                    alterarOrdem(lixeirasOrdenadas, codigoCaminhao);
                     break;
             }
         }while(opcao != 0);
