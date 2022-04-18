@@ -32,7 +32,7 @@ public class Nuvem {
             bd.createNewFile();
             FileWriter escritor = new FileWriter(bd);
             BufferedWriter bw = new BufferedWriter(escritor);
-            bw.write("{'Lixeira':[],'Caminhao':[],'Estacao':[]}");
+            bw.write("{'Lixeira':[],'Caminhao':[],'Estacao':[{\"codigo\":1,\"latitude\":10,\"capacidadeMaxima\":100000,\"capacidadeAtual\":0,\"longitude\":10}]}");
             bw.close();
             escritor.close();
         }
@@ -60,7 +60,7 @@ public class Nuvem {
             bd.createNewFile();
             FileWriter escritor = new FileWriter(bd);
             BufferedWriter bw = new BufferedWriter(escritor);
-            bw.write("{'Lixeira':[],'Caminhao':[],'Estacao':[]}");
+            bw.write("{'Lixeira':[],'Caminhao':[],'Estacao':[{\"codigo\":1,\"latitude\":10,\"capacidadeMaxima\":100000,\"capacidadeAtual\":0,\"longitude\":10}]}");
             bw.close();
             escritor.close();            
         }
@@ -77,6 +77,37 @@ public class Nuvem {
         return caminhoes;
     }
     
+    
+    /**
+     * Metodo responsavel por retornar todos os caminhoes armazenados no arquivo banco de dados
+     * @return caminhoes - Array com todos os objetos JSON que sao caminhoes
+     * @throws IOException - erros de entrada/saida do sistema de arquivos e S.O.
+     */
+    public static JSONArray getEstacoes() throws IOException{
+        bd = new File("./bancodedados.json");
+        if(bd.exists() == false){            
+            bd.createNewFile();
+            FileWriter escritor = new FileWriter(bd);
+            BufferedWriter bw = new BufferedWriter(escritor);
+            bw.write("{'Lixeira':[],'Caminhao':[],'Estacao':[{\"codigo\":1,\"latitude\":10,\"capacidadeMaxima\":100000,\"capacidadeAtual\":0,\"longitude\":10}]}");
+            bw.close();
+            escritor.close();            
+        }
+        FileReader leitor = new FileReader(bd);
+        BufferedReader buffer = new BufferedReader(leitor);
+        String arquivo = "";
+        while(buffer.ready()){
+            arquivo += buffer.readLine(); // Realiza a leitura do arquivo linha por linha
+        }
+        JSONObject json = new JSONObject(arquivo);                              
+        JSONArray estacoes = json.getJSONArray("Estacao");
+        JSONObject estacao = (JSONObject) estacoes.get(0);
+        estacao.put("capacidadeAtual", 0);
+        buffer.close();
+        leitor.close();
+        return estacoes;
+    }
+    
     /**
      * Metodo que escreve as alteracoes das lixeiras no arquivo de banco de dados
      * @param lista - novas lixeiras a serem inseridas na base de dados
@@ -85,6 +116,7 @@ public class Nuvem {
      */
     public static void escreverLixeiras(List lista, JSONArray lixeiras) throws IOException{
         JSONArray caminhoes = getCaminhoes();
+        JSONArray estacoes = getEstacoes();
         FileWriter escritor = new FileWriter(bd);
         BufferedWriter bw = new BufferedWriter(escritor);
 
@@ -94,6 +126,7 @@ public class Nuvem {
         JSONObject json = new JSONObject();
         json.put("Lixeira", lixeiras);
         json.put("Caminhao", caminhoes);
+        json.put("Estacao", estacoes);
         bw.write(json.toString());
         bw.close(); 
         escritor.close();                    
@@ -106,6 +139,7 @@ public class Nuvem {
      * @throws IOException  - excecoes de entrada/saida do sistema de arquivos e SO
      */
     public static void escreverCaminhoes(List lista, JSONArray caminhoes) throws IOException{        
+        JSONArray estacoes = getEstacoes();
         JSONArray lixeiras = getLixeiras();        
         FileWriter escritor = new FileWriter(bd);
         BufferedWriter bw = new BufferedWriter(escritor);        
@@ -115,9 +149,65 @@ public class Nuvem {
         JSONObject json = new JSONObject();
         json.put("Caminhao", caminhoes);        
         json.put("Lixeira", lixeiras);        
+        json.put("Estacao", estacoes);
         bw.write(json.toString());
         bw.close(); 
         escritor.close();                    
+    }
+    
+    /**
+     * Metodo que escreve as alteracoes das estacoes no arquivo de banco de dados     
+     * @param estacoes - array de estacoes a serem adicionados no arquivo
+     * @throws IOException  - excecoes de entrada/saida do sistema de arquivos e SO
+     */
+    public static void escreverEstacoes(JSONArray estacoes) throws IOException{        
+        JSONArray  caminhoes = getCaminhoes();
+        JSONArray lixeiras = getLixeiras();        
+        
+        FileWriter escritor = new FileWriter(bd);
+        BufferedWriter bw = new BufferedWriter(escritor);                
+        JSONObject json = new JSONObject();
+        json.put("Caminhao", caminhoes);        
+        json.put("Lixeira", lixeiras);        
+        json.put("Estacao", estacoes);
+        bw.write(json.toString());
+        bw.close(); 
+        escritor.close();                    
+    }
+    
+    public static JSONArray ordenarLixeirasCapacidade(JSONArray lixeiras){
+        List<Object> ordenadas = new ArrayList();
+        int maiorPosicao = 0;
+        for(int i = 0; i < lixeiras.length(); i++){
+            JSONObject atual = lixeiras.getJSONObject(i);
+            if(i == 0){
+                ordenadas.add(atual);                        
+            } else{
+                for(int j = 0; j < ordenadas.size(); j++){
+                    JSONObject ordenada = (JSONObject) ordenadas.get(j);                            
+                    double porcentagemAtual = (atual.getDouble("capacidadeAtual")/atual.getDouble("capacidadeMaxima"))*100;
+                    double porcentagemOrdenada = (ordenada.getDouble("capacidadeAtual")/ordenada.getDouble("capacidadeMaxima"))*100;
+                    if(porcentagemAtual <= porcentagemOrdenada){                                        
+                            ordenadas.add(j, atual);                                
+                            break;
+                    } else {
+                        if(j == ordenadas.size()-1){
+                            JSONObject maior = (JSONObject) ordenadas.remove(j);                                        
+                            ordenadas.add(j, atual);
+                            ordenadas.add(j, maior);
+                            maior = atual;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+       JSONArray convertida = new JSONArray();
+       for(int i = ordenadas.size(); i > 0; i--){
+           convertida.put(ordenadas.get(i-1));                           
+       }        
+       return convertida;
     }
     
     public static void main(String[] args) throws IOException {
@@ -144,7 +234,7 @@ public class Nuvem {
         
         //Inicializa o Stream responsavel pela resposta ao cliente
         ObjectOutputStream cliente_enviar = new ObjectOutputStream(cliente.getOutputStream());
-        
+        System.out.println("Cliente: " + requisicao.getString("cliente") + "\nOperação: " + requisicao.getString("operacao") + "\n");
         switch(requisicao.getString("cliente")){
             /** Operacao realizada por/com lixeiras*/
             case "Lixeira":                                
@@ -160,6 +250,7 @@ public class Nuvem {
                         resposta.put("bloqueada", false);
                         lista.add(resposta);
                         dados_resposta = resposta.toString();                        
+                        escreverLixeiras(lista, lixeiras);
                         break;
                     // Altera a capacidadeAtual de uma dada lixeira
                     case "ALTERAR_CAPACIDADE":
@@ -185,6 +276,7 @@ public class Nuvem {
                             }                             
                         }
                         dados_resposta = resposta.toString();                                               
+                        escreverLixeiras(new ArrayList(), lixeiras);
                         break;    
                     // Retorna os dados de uma dada lixeira a partir de um codigo
                     case "BUSCAR":
@@ -201,10 +293,7 @@ public class Nuvem {
                             }
                         }
                         break;                                            
-                }
-                escreverLixeiras(lista, lixeiras);
-                System.out.println(dados_resposta);
-                escreverLixeiras(new ArrayList(), lixeiras);
+                }                                                
                 cliente_enviar.writeObject(dados_resposta);
                 cliente_enviar.flush();           
                 cliente_enviar.close();
@@ -217,7 +306,7 @@ public class Nuvem {
                     case "LISTAR_LIXEIRAS":
                         JSONObject dadosLixeiras = new JSONObject();                        
                         dadosLixeiras.put("Lixeira", lixeiras);                                                
-                        dados_resposta = dadosLixeiras.toString();
+                        dados_resposta = dadosLixeiras.toString();                        
                     break;
                     // Altera o estado de uma dada lixeira (altera a variavel boolean para true/false, represenando bloqueado/desbloqueado)
                     case "ALTERAR_ESTADO":                        
@@ -234,36 +323,28 @@ public class Nuvem {
                         }
                         dados_resposta = resposta.toString();
                         escreverLixeiras(new ArrayList(), lixeiras);                                                
-                        break;
+                        break;                      
                     case "ALTERAR_ORDEM":
+                        dados_resposta = "false";
                         for(int i = 0; i < caminhoes.length(); i++){
-                            JSONObject atual = caminhoes.getJSONObject(i);                            
-                            if(atual.getInt("codigo") == requisicao.getInt("caminhao")){
-                                for(int j = 0; j < lixeiras.length();j++){
-                                    JSONObject atualLixeira = lixeiras.getJSONObject(j);
-                                    if(atualLixeira.getInt("codigo") == requisicao.getInt("Lixeira")){
-                                        JSONArray lixeirasOrdem = new JSONArray();
-                                        if(atual.getJSONArray("ordem") != null){
-                                            lixeirasOrdem = atual.getJSONArray("ordem");                                            
-                                        }
-                                        lixeirasOrdem.put(requisicao.getInt("ordem"), requisicao.getInt("lixeira"));   
-                                        resposta.put("resposta", true);
-                                        resposta.put("mensagem", "Ordem alterada");
-                                        break;
-                                    }
-                                    else{
-                                        resposta.put("resposta", false);
-                                        resposta.put("mensagem", "Lixeira não encontrada");
-                                    }
-                                }
+                            JSONObject atual = (JSONObject) caminhoes.get(i);
+                            if(atual.getInt("codigo") == requisicao.getInt("codigo")){
+                                if(requisicao.getString("forma").equals("arbitraria")){
+                                    atual.put("lixeiras", requisicao.getJSONArray("ordem"));                                
+                                }else{                                    
+                                    JSONArray lixeirasOrdenadas = ordenarLixeirasCapacidade(lixeiras);                                
+                                    JSONArray codigos = new JSONArray();
+                                    for(int j = 0; j < lixeirasOrdenadas.length(); j++){
+                                        JSONObject atualLixeira = (JSONObject) lixeirasOrdenadas.get(j);
+                                        codigos.put(atualLixeira.getInt("codigo"));
+                                    }                                    
+                                    atual.put("lixeiras", codigos);
+                                }         
+                                dados_resposta = "true";
                                 break;
-                            } else {
-                                resposta.put("resposta", false);
-                                resposta.put("mensagem", "Caminhao não encontrada");
                             }
-                            JSONArray ordem = new JSONArray();                            
-                            
-                        }
+                        }                        
+                        escreverCaminhoes(lista, caminhoes);                    
                         break;
                     default:
                         dados_resposta = "Operação não encontrada";
@@ -276,6 +357,7 @@ public class Nuvem {
             /** Opercoes realizadas pelos caminhoes*/
             case "Caminhao":
                 caminhoes = getCaminhoes();                               
+                JSONArray estacoes = getEstacoes();
                 switch(requisicao.getString("operacao")){
                     // Cria um caminhao no banco de dados
                     case "CRIAR":
@@ -291,16 +373,15 @@ public class Nuvem {
                         }
                         resposta.put("lixeiras", codigos);
                         lista.add(resposta);
-                        dados_resposta = resposta.toString();                        
-                        System.out.println(dados_resposta);
+                        dados_resposta = resposta.toString();                                                
+                        escreverCaminhoes(lista, caminhoes);                    
                         break;     
                     // Realiza a busca de um caminhao no banco de dados e o retorna como objeto JSON
                     case "BUSCAR":                                                
                         for(int i = 0; i < caminhoes.length(); i++){
                             JSONObject atual = caminhoes.getJSONObject(i);                                                        
                             if(atual.getInt("codigo") == requisicao.getInt("codigo")){                
-                                resposta = new JSONObject();
-                                System.out.println(atual.getInt("codigo"));
+                                resposta = new JSONObject();                                
                                 resposta.put("codigo", atual.get("codigo"));
                                 resposta.put("latitude", atual.get("latitude"));
                                 resposta.put("longitude", atual.get("longitude"));
@@ -339,19 +420,14 @@ public class Nuvem {
                             double capacidadeAtualCaminhao = atualCaminhao.getDouble("capacidadeAtual");
                             double novaCapacidade = capacidadeAtualLixeira + capacidadeAtualCaminhao;
                             if(novaCapacidade > capacidadeMaximaCaminhao){
-                                resposta.put("resposta", false);
-                                resposta.put("mensagem", "Lixeira não coletada, descarregue o caminhão");
+                                resposta.put("resposta", false);                                
                             } else {                                
                                 atualLixeira.put("capacidadeAtual", 0);
                                 atualCaminhao.put("capacidadeAtual", novaCapacidade);
-                                resposta.put("inserido", true);
-                                resposta.put("mensagem", "Lixeira coletada");
+                                resposta.put("resposta", true);                                
                             }
                         }
-                        dados_resposta = resposta.toString();                         
-                        cliente_enviar.writeObject(dados_resposta);
-                        cliente_enviar.flush();           
-                        cliente_enviar.close();
+                        dados_resposta = resposta.toString();
                         escreverLixeiras(new ArrayList(), lixeiras);
                         escreverCaminhoes(lista, caminhoes);
                         break;                    
@@ -367,52 +443,31 @@ public class Nuvem {
                         resposta = new JSONObject();
                         resposta.put("lixeiras", lixeirasCaminhao);
                         dados_resposta = resposta.toString();                        
-                        break;
-                    case "ALTERAR_ORDEM":
-                        for(int i = 0; i < caminhoes.length(); i++){
-                            JSONObject atual = (JSONObject) caminhoes.get(i);
-                            if(atual.getInt("codigo") == requisicao.getInt("codigo")){
-                                atual.put("lixeiras", requisicao.getJSONArray("ordem"));
-                                break;
-                            }
-                        }
-                        dados_resposta = "confirmado";
-                        break;
+                        break;                    
                     // Realiza listagem de lixeiras a serem coletadas pelo caminhao por capacidade
-                    case "LISTAR_LIXEIRAS_CAPACIDADE":
-                        List<Object> ordenadas = new ArrayList();
-                        int maiorPosicao = 0;
-                        for(int i = 0; i < lixeiras.length(); i++){
-                            JSONObject atual = lixeiras.getJSONObject(i);
-                            if(i == 0){
-                                ordenadas.add(atual);                        
-                            } else{
-                                for(int j = 0; j < ordenadas.size(); j++){
-                                    JSONObject ordenada = (JSONObject) ordenadas.get(j);                            
-                                    if(atual.getDouble("capacidadeAtual") <= ordenada.getDouble("capacidadeAtual")){                                        
-                                            ordenadas.add(j, atual);                                
-                                            break;
-                                    } else {
-                                        if(j == ordenadas.size()-1){
-                                            JSONObject maior = (JSONObject) ordenadas.remove(j);                                        
-                                            ordenadas.add(j, atual);
-                                            ordenadas.add(j, maior);
-                                            maior = atual;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        
-                       JSONArray convertida = new JSONArray();
-                       for(int i = ordenadas.size(); i > 0; i--){
-                           convertida.put(ordenadas.get(i-1));                           
-                       }                      
-                                                                                                                                       
+                    case "LISTAR_LIXEIRAS_CAPACIDADE":                       
+                       JSONArray convertida = ordenarLixeirasCapacidade(lixeiras);
                        JSONObject convertido = new JSONObject();
                        convertido.put("Lixeira", convertida);
                        dados_resposta = convertido.toString();                                               
+                       break;
+                    case "ESVAZIAR":
+                        resposta = new JSONObject();
+                        resposta.put("resposta", false);
+                        for(int i = 0; i < caminhoes.length(); i++){
+                            JSONObject atual = (JSONObject) caminhoes.get(i);
+                            if(atual.getInt("codigo") == requisicao.getInt("caminhao")){
+                                double capacidade = atual.getDouble("capacidadeAtual");
+                                atual.put("capacidadeAtual", 0);                                
+                                resposta.put("resposta", true);
+                                JSONObject estacao = (JSONObject) estacoes.get(0);                                
+                                double capacidadeEstacao = estacao.getDouble("capacidadeAtual");
+                                estacao.put("capacidadeAtual", capacidadeEstacao + capacidade);
+                            }
+                        }
+                        dados_resposta = resposta.toString();
+                        escreverCaminhoes(lista, caminhoes);
+                        escreverEstacoes(estacoes);                                                                                                
                         break;
                     default:
                         dados_resposta = "[Caminhao] Operacao nao encontrada";
@@ -420,9 +475,8 @@ public class Nuvem {
                 }
                     cliente_enviar.writeObject(dados_resposta);
                     cliente_enviar.flush();           
-                    cliente_enviar.close();                    
-                    escreverCaminhoes(lista, caminhoes);
-                break;
+                    cliente_enviar.close();                                        
+                break;            
             default:
                 dados_resposta = "Cliente não encontrado/especificado!";
                 cliente_enviar.writeObject(dados_resposta);

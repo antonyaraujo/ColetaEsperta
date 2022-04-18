@@ -6,9 +6,8 @@ package Controle;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import static java.lang.Math.round;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -72,6 +71,14 @@ public class Caminhao {
         this.capacidadeAtual = capacidadeAtual;
     }
             
+    /**
+     * Realiza a criacao de um caminhao no Banco de Dados com os valores correspondente
+     * via Servidor
+     * @param capacidadeMaxima - valor (dobule) em m³ de capacidade maxima do caminhao
+     * @param latitude - latitude do caminhao
+     * @param longitude - longitude do caminhao
+     * @return Caminhao - objeto contendo os dados do caminhao criado, se for criado
+     */
     public static Caminhao criarCaminhao(double capacidadeMaxima, double latitude, double longitude){
         try(Socket nuvem = new Socket("localhost", 40000)){
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                        
@@ -100,6 +107,13 @@ public class Caminhao {
         return null;
     }
     
+    /**
+     * Realiza a busca de um caminhao no BD a partir de um dado codigo
+     * @param codigo - codigo pelo qual sera buscado o caminhao correspondente
+     * @return Caminhao - retorna o caminhao com os dados correspondente caso
+     * exista um caminhao com o codigo informado
+     * @return null - caso nao exista nenhum caminhao com o codigo informado
+     */
     public static Caminhao buscarCaminhao(int codigo){
          try(Socket nuvem = new Socket("localhost", 40000)){
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
@@ -133,17 +147,24 @@ public class Caminhao {
         return null;
     }
     
-    public static JSONArray getLixeiras(int codigoLixeira){
+    /**
+     * Retorna todas as lixeiras de um dado caminhao
+     * @param codigoCaminhao - codigo do caminhao de qual sera buscado as lixeiras
+     * @return lixeiras - JSONArray que contem JSONObjects das lixeiras 
+     * a serem recolhidas pelo caminhao
+     */
+    public static JSONArray getLixeiras(int codigoCaminhao){
         try(Socket nuvem = new Socket("localhost", 40000)){
+            /** Realiza a solicitacao de busca das lixeiras do caminhao do codigo informado */
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
             json.put("cliente", "Administrador");
             json.put("operacao", "LISTAR_LIXEIRAS");                       
-            json.put("caminhao", codigoLixeira);
-                       
+            json.put("caminhao", codigoCaminhao);                       
             String dados = json.toString();
             nuvem_enviar.writeObject(dados);
             nuvem_enviar.flush();                
+            
             /** Recebimento dos dados da solicitação */
             ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
             dados = (String) nuvem_receber.readObject();
@@ -160,45 +181,99 @@ public class Caminhao {
         return null;
     }
     
+    /**
+     * Retorna a capacidade da lixeira em porcentagem
+     * @return valor em % da ocupacao da lixeira aproximado em duas casas decimais
+     */
+    public static double getCapacidade(double atual, double maxima){        
+        double porcentagem = (atual/maxima)*100;                
+        return round(porcentagem*100)/100.0;
+    }
+    
+    /**
+     * Realiza a exibicao das lixeiras
+     * @param lixeiras - lista de lixeiras
+     */
     public static void exibirLixeiras(JSONArray lixeiras){
         System.out.println("Lista de Lixeiras");
         for(int i = 0; i < lixeiras.length(); i++){
-            JSONObject atual = (JSONObject)lixeiras.get(i-1);
+            JSONObject atual = (JSONObject)lixeiras.get(i);
             System.out.println("\nCódigo: " + atual.getInt("codigo"));
             if(atual.getBoolean("bloqueada"))
                 System.out.println("Estado: bloqueada");
             else
                 System.out.println("Estado: desbloqueada");
-            System.out.println("Capacidade: " + atual.getDouble("capacidadeAtual"));            
+            System.out.println("Capacidade: " + getCapacidade(atual.getDouble("capacidadeAtual"), atual.getDouble("capacidadeMaxima")) + "%");
             }
     }
     
-    public static JSONObject coletarLixeira(JSONObject lixeira, Caminhao caminhao){
+    /**
+     * Metodo responsavel por fazer as solicitacoes de coleta de Lixeira no servidor
+     * @param lixeira - Lixeira a ser coletada
+     * @param caminhao - Caminhao que coletara a lixeira
+     * @return true - Se a coleta da lixeira tiver sido realizada com sucesso
+     * @return false - Se a lixeira nao tiver sido coletada
+     */
+    public static boolean coletarLixeira(JSONObject lixeira, Caminhao caminhao){
         try(Socket nuvem = new Socket("localhost", 40000)){
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
             json.put("cliente", "Caminhao");
             json.put("operacao", "COLETAR");
             json.put("lixeira", lixeira.getInt("codigo"));
-            json.put("caminhao", caminhao.getCodigo());
-            System.out.println("JSON ENVIO" + json.toString());
+            json.put("caminhao", caminhao.getCodigo());            
             String dados = json.toString();
             nuvem_enviar.writeObject(dados);
             nuvem_enviar.flush();                
             /** Recebimento dos dados da solicitação */
             ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
-            dados = (String) nuvem_receber.readObject();            
-            System.out.println("Dados chegada no caminhao: "+ dados);
-            JSONObject requisicao = new JSONObject(dados);                        
-            System.out.println("Dados chegada no caminhao: "+ dados);
+            dados = (String) nuvem_receber.readObject();                        
+            JSONObject requisicao = new JSONObject(dados);                                    
             nuvem_receber.close();
             nuvem_enviar.close();
-            nuvem.close();                 
-            return requisicao;
+            nuvem.close();                        
+            return requisicao.getBoolean("resposta");
         }catch(Exception e) {            
            System.out.println("Erro: " + e.getMessage());
         }        
-        return null;
+        return false;
+    }
+    
+    /**
+     * Metodo responsavel por fazer a requisicao de esvaziamento (zera a 
+     * capacidadeAtual) do Caminhao
+     * @param caminhao - Caminhao a ser esvaziado
+     * @return true - Se o caminhao tiver sido esvaziado
+     * @return false - Se o caminhao nao tiver sido esvaziado
+     */
+    public static boolean esvaziarCaminhao(Caminhao caminhao){
+        try(Socket nuvem = new Socket("localhost", 40000)){
+            ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
+            JSONObject json = new JSONObject();
+            json.put("cliente", "Caminhao");
+            json.put("operacao", "ESVAZIAR");            
+            json.put("caminhao", caminhao.getCodigo());            
+            String dados = json.toString();
+            nuvem_enviar.writeObject(dados);
+            nuvem_enviar.flush();                
+            
+            /** Recebimento dos dados da solicitação */
+            ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
+            dados = (String) nuvem_receber.readObject();                        
+            JSONObject requisicao = new JSONObject(dados);                                    
+            
+            boolean resposta = false;
+            if(dados.equals("true"))
+                resposta = true;
+            nuvem_receber.close();
+            nuvem_enviar.close();
+            nuvem.close();                 
+            
+            return requisicao.getBoolean("resposta");
+        }catch(Exception e) {            
+           System.out.println("Erro: " + e.getMessage());
+        }        
+        return false;
     }
     
     public static void main(String[] args)  {
@@ -267,10 +342,20 @@ public class Caminhao {
                                 System.out.println("Lixeira não encontrada, informe um novo codigo");
                     }while(!confirmacao);
                     
-                    JSONObject saida = coletarLixeira(lixeira, caminhao);
-                    System.out.println(saida.toString());
-                    System.out.println(saida.getString("mensagem"));                    
+                    boolean saida = coletarLixeira(lixeira, caminhao);                    
+                    if(saida){
+                        System.out.println("Lixeira coletada!");
+                    } else {
+                        System.out.println("Lixeira não coletada, descarregue o caminhão");
+                    }
                     
+                    break;
+                case 3:
+                    boolean resposta = esvaziarCaminhao(caminhao);
+                    if(resposta)
+                        System.out.println("Caminhão esvaziado!");
+                    else
+                        System.out.println("Caminhão não esvaziado!");
                     break;
             }
         }while(opcao != 0);

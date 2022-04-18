@@ -4,14 +4,10 @@
  */
 package Controle;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import static java.lang.Math.round;
 import static java.lang.Thread.sleep;
 import java.net.*;
 import java.util.Scanner;
@@ -21,7 +17,7 @@ import org.json.JSONObject;
 
 /**
  *
- * @author antony
+ * @author Antony
  */
 public class Lixeira extends Thread{    
     private int codigo;
@@ -94,12 +90,11 @@ public class Lixeira extends Thread{
          
     /**
      * Retorna a capacidade da lixeira em porcentagem
-     * @return 
+     * @return valor em % da ocupacao da lixeira aproximado em duas casas decimais
      */
-    public int getCapacidade(){        
-        double porcentagem = getCapacidadeAtual()/getCapacidadeMaxima();        
-        int valor = (int) (porcentagem*100);
-        return valor;
+    public double getCapacidade(){        
+        double porcentagem = (getCapacidadeAtual()/getCapacidadeMaxima())*100;                
+        return round(porcentagem*100)/100.0;
     }
     
     public String getDados(){                
@@ -107,10 +102,18 @@ public class Lixeira extends Thread{
                 + String.valueOf(getCapacidade()) + ";" + String.valueOf(isBloqueada());
     }
     
+    /**
+     * Metodo responsavel por criar uma lixeira no banco de dados
+     * @param capacidadeMaxima - capacidade maxima da lixeira a ser criada
+     * @param latitude - latitude da lixeira a ser criada
+     * @param longitude - longitude da lixeira a ser criada
+     * @return objeto Lixeira - se a lixeira tiver sido criada no banco de dados pelo servidor
+     * @return null - se a lixeira nao tiver sido criada no banco de dados pelo servidor
+     */
     public static Lixeira criarLixeira(double capacidadeMaxima, double latitude, double longitude){
         try(Socket nuvem = new Socket("localhost", 40000)){
-            ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                        
-            //ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
+            /** Procedimento de envio da solicitacao de criacao da Lixeira*/
+            ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
             json.put("cliente", "Lixeira");
             json.put("operacao", "CRIAR");                       
@@ -120,6 +123,7 @@ public class Lixeira extends Thread{
             String dados = json.toString();
             nuvem_enviar.writeObject(dados);                        
             
+            /** Procedimento de recebimento da resposta a solicitacao */
             ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
             dados = (String) nuvem_receber.readObject();
             JSONObject requisicao = new JSONObject(dados);
@@ -135,6 +139,13 @@ public class Lixeira extends Thread{
         return null;
     }
             
+    /**
+     * Metodo respponsavel por alterar a capacidade atual de lixo na Lixeira no banco de dados
+     * @param quantidade - a quantidade de lixo (double) a ser adicionada ou removida 
+     * @param alteracao - indicacao da operacao (adicionar/remover)
+     * @return true - se a operacao (adicao/remocao) tiver sido realizada com sucesso
+     * @return false - se a operacao (adicao/remocao) nao tiver sido realizada
+     */
     public boolean alterarCapacidade(double quantidade, String alteracao){                
         try(Socket nuvem = new Socket("localhost", 40000)){
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                        
@@ -154,15 +165,26 @@ public class Lixeira extends Thread{
             
             nuvem_receber.close();
             nuvem_enviar.close();
-            nuvem.close();
-            return requisicao.getBoolean("confirmar_operacao");
-            
+            nuvem.close();            
+                
+            return requisicao.getBoolean("confirmar_operacao");            
         }catch(Exception e) {            
            System.out.println("Erro: " + e.getMessage());
         } 
         return false;
     }        
 
+    /**
+     * Metodo responsavel por realizar a busca de uma Lixeira no banco de dados
+     * e retornar os dados da lixeira de codigo correspondente
+     * @param codigo - codigo pelo qual sera realizada a busca da lixeira no banco de dados
+     * @return Lixeira - objeto lixeira que possui os dados correspondente a lixeira
+     * do codigo informado, se existir
+     * @return null - caso o codigo informado nao corresponda a nenhuma lixeira
+     * do banco de dados
+     * @throws IOException
+     * @throws ClassNotFoundException 
+     */
     public Lixeira buscarLixeira(int codigo) throws IOException, ClassNotFoundException{
         try(Socket nuvem = new Socket("localhost", 40000)){                                                
             /** Realiza o envio de requisicao para o servidor da lixeira a ser buscada*/
@@ -200,11 +222,20 @@ public class Lixeira extends Thread{
                    
     public static void main(String[] args) throws IOException, InterruptedException, ClassNotFoundException {        
         Lixeira lixeira;
-        System.out.println("#### INICIALIZAÇÃO DA LIXEIRA ####"
+        System.out.println("   ____      _      _        _____                     _        \n" +
+        "  / ___|___ | | ___| |_ __ _| ____|___ _ __   ___ _ __| |_ __ _ \n" +
+        " | |   / _ \\| |/ _ \\ __/ _` |  _| / __| '_ \\ / _ \\ '__| __/ _` |\n" +
+        " | |__| (_) | |  __/ || (_| | |___\\__ \\ |_) |  __/ |  | || (_| |\n" +
+        "  \\____\\___/|_|\\___|\\__\\__,_|_____|___/ .__/ \\___|_|   \\__\\__,_|\n" +
+        "                                      |_|                       ");
+        System.out.println("==== INICIALIZAÇÃO DA LIXEIRA ===="
                 + "\n1. Criar nova lixeira;"
-                + "\n2. Utilizar Lixeira existente");        
+                + "\n2. Utilizar Lixeira existente"
+                + "\n0. Sair");        
         Scanner leitor = new Scanner(System.in);
         int opcao = leitor.nextInt();
+        if(opcao == 0)
+            System.exit(0);
         if(opcao == 1){
             System.out.println("Informe a capacidade total da Lixeira (m³): ");
             double capacidade = leitor.nextDouble();
@@ -219,7 +250,11 @@ public class Lixeira extends Thread{
             lixeira = new Lixeira();
             lixeira.buscarLixeira(codigo);
         }
-                        
+                 
+        /** Executavel responsavel por realizar a sincronizacao dos dados 
+         entre a lixeira e o banco de dados via Servidor
+         @alert a sincronziacao ocorre a cada 5 segundos
+         */
         Runnable r = new Runnable() {
         public void run() {
                 try {
@@ -238,7 +273,7 @@ public class Lixeira extends Thread{
         }};
         
        Thread t = new Thread(r);
-       t.start();
+       t.start(); // Inicia a thread sincronizadora
         
         try {
             opcao = 1;
@@ -261,8 +296,10 @@ public class Lixeira extends Thread{
                             System.out.println("Informe a quantidade de lixo (m³): ");
                             double quantidade = leitor.nextDouble();
                             boolean resposta = lixeira.alterarCapacidade(quantidade, "adicionar");
-                            if(resposta)
-                                System.out.println("Lixo adicionado!");
+                            if(resposta){
+                                System.out.println("Lixo adicionado!");                            
+                                lixeira.setCapacidadeAtual(lixeira.getCapacidadeAtual()+quantidade);
+                            }
                             else
                                 System.out.println("Quantidade ultrapassa a capacidade maxima da lixeira!");
                         } else {
@@ -275,8 +312,10 @@ public class Lixeira extends Thread{
                             System.out.println("Informe a quantidade de lixo (m³): ");
                             double quantidade_remover = leitor.nextDouble();
                             boolean resposta = lixeira.alterarCapacidade(quantidade_remover, "remover");
-                            if(resposta)
+                            if(resposta){
                                 System.out.println("Lixo removido!");
+                                lixeira.setCapacidadeAtual(lixeira.getCapacidadeAtual()-quantidade_remover);
+                            }
                             else
                                 System.out.println("Quantidade ultrapassa a capacidade atual da lixeira!");
                         } else {
@@ -284,12 +323,14 @@ public class Lixeira extends Thread{
                         }
                     break;
                 }
-                                                                               
+                if(opcao > 3 || opcao < 0)
+                   System.out.println("Opção inválida!");
             } while(opcao != 0);
             
             t.stop();
         }catch(Exception e) {
             System.out.println("Erro: " + e.getMessage());
+            t.stop();
     }
         finally {
         }

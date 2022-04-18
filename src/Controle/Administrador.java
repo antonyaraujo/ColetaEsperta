@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package Controle;
 
 import java.io.IOException;
@@ -17,7 +13,7 @@ import org.json.JSONObject;
 
 /**
  *
- * @author antony
+ * @author Antony Araujo
  */
 public class Administrador {    
     
@@ -31,23 +27,25 @@ public class Administrador {
      */
     public static JSONArray getLixeiras(){
         try(Socket nuvem = new Socket("localhost", 40000)){
+            /** Procedimento de envio da solicitacao */
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
             json.put("cliente", "Administrador");
             json.put("operacao", "LISTAR_LIXEIRAS");                       
                        
             String dados = json.toString();
-            nuvem_enviar.writeObject(dados);
-            nuvem_enviar.flush();                
-            /** Recebimento dos dados da solicitação */
+            nuvem_enviar.writeObject(dados); // Envio dos dados encapsulados
+            nuvem_enviar.flush();  // Atualiza o envio/recebimento da conexao stream
+            
+            /** Procedimento de recebimento da resposta a solicitação */
             ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
             dados = (String) nuvem_receber.readObject();            
             JSONObject requisicao = new JSONObject(dados);            
             JSONArray lixeiras = requisicao.getJSONArray("Lixeira");            
                                     
-            nuvem_receber.close();
-            nuvem_enviar.close();
-            nuvem.close();            
+            nuvem_receber.close(); // fecha o stream de recebimento de dados
+            nuvem_enviar.close(); // fecha o stream de envio de dados
+            nuvem.close(); // fecha a comunicacao via socket
             return lixeiras;
         }catch(Exception e) {            
            System.out.println("Erro: " + e.getMessage());
@@ -58,28 +56,31 @@ public class Administrador {
     /**
      * Metodo que retorna as informacoes de um caminhao
      * recuperando-o do banco de dados atraves de de uma conexao via rede
-     * @return lixeiras - Array que possui todas as lixeiras do banco de dados
+     * @param codigo - inteiro que representa o codigo do caminhao a ser buscado no BD
+     * @return caminhao - retorna um caminhao se o o codigo tiver sido localizado no BD
+     * @return null - caso nenhum caminhao tenha sido encontrado no BD
      */
     public static JSONObject buscarCaminhao(int codigo){
         try(Socket nuvem = new Socket("localhost", 40000)){
+            /** Procedimento de envio da solicitacao */
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
             json.put("cliente", "Caminhao");
             json.put("operacao", "BUSCAR");                       
-            json.put("codigo", codigo);
-                       
+            json.put("codigo", codigo);                       
             String dados = json.toString();
             nuvem_enviar.writeObject(dados);
-            nuvem_enviar.flush();                
-            /** Recebimento dos dados da solicitação */
+            nuvem_enviar.flush();              
+            
+            /** Procedimento de recebimento dos dados da solicitação */
             ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
             dados = (String) nuvem_receber.readObject();            
-            JSONObject requisicao = new JSONObject(dados);            
-            //JSONArray lixeiras = requisicao.getJSONArray("Lixeira");            
+            JSONObject requisicao = new JSONObject(dados);                        
                                     
             nuvem_receber.close();
             nuvem_enviar.close();
             nuvem.close();            
+            
             return requisicao;
         }catch(Exception e) {            
            System.out.println("Erro: " + e.getMessage());
@@ -89,15 +90,21 @@ public class Administrador {
     
     /**
      * Retorna a capacidade da lixeira em porcentagem
-     * @return 
+     * @return valor em % da ocupacao da lixeira aproximado em duas casas decimais
      */
     public static double getCapacidade(double atual, double maxima){        
-        double porcentagem = atual/maxima;                
-        return round(porcentagem*100);
+        double porcentagem = (atual/maxima)*100;
+        return round(porcentagem*100)/100.0;
     }
     
+    /**
+     * Exibe o codigo, estado e capacidade (%) das lixeiras existentes em um JSONArray de lixeiras
+     * @param lixeiras - Array de lixeiras a serem exibidas
+     */
     public static void exibirLixeiras(JSONArray lixeiras){
-        System.out.println("Lista de Lixeiras");
+        System.out.println("====================\n"
+                         + "  Lista de Lixeiras"
+                + "       \n====================");
         for(int i = 0; i < lixeiras.length(); i++){
             JSONObject atual = lixeiras.getJSONObject(i);
             System.out.println("\nCódigo: " + atual.getInt("codigo"));
@@ -109,93 +116,78 @@ public class Administrador {
             }
     }
     
+    /**
+     * Realiza uma solicitacao ao servidor para alterar o estado de uma dada lixeira
+     * @param codigo - codigo da lixeira a ter o seu estado alterado
+     * @param estado - novo estado (true/false) da lixeira informada
+     * @return mensagem com confirmacao ou nao da operacao
+     * @throws IOException
+     * @throws ClassNotFoundException 
+     */
     public static String alterarEstadoLixeira(int codigo, boolean estado) throws IOException, ClassNotFoundException{
         String mensagem_confirmacao = "";
         try(Socket nuvem = new Socket("localhost", 40000)){                                                
+            /** Procedimento de envio da solicitacao */
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
             json.put("cliente", "Administrador");
             json.put("operacao", "ALTERAR_ESTADO");
             json.put("bloqueada", estado);
-            json.put("codigo", codigo);
-            
+            json.put("codigo", codigo);            
             String dados = json.toString();
             nuvem_enviar.writeObject(dados);
-            nuvem_enviar.flush();                                    
-            /** Recebimento dos dados da solicitação */
+            nuvem_enviar.flush();      
+            
+            /** Procedimento recebimento da resposta da solicitação */
             ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
             dados = (String) nuvem_receber.readObject();
             JSONObject requisicao = new JSONObject(dados);            
                                                                        
-            if(estado){
-                if(requisicao.getBoolean("resposta")){
+            if(estado){ // Se a solicitacao for para bloquear a lixeira 
+                if(requisicao.getBoolean("resposta")){  // e a lixeira tiver sido bloqueada via servidor
                     mensagem_confirmacao = "Lixeira bloqueada!";
-                } else{
+                } else{ // Caso a lixeira ja esteja bloqueada
                     mensagem_confirmacao = "A lixeira já está bloqueada ou ocorreu algum problema na sua solicitação!";
                 }
-            } else{
-                if(requisicao.getBoolean("resposta")){
+            } else{ // Se a solicitacao for para desbloquear a lixeira
+                if(requisicao.getBoolean("resposta")){ // e a lixeira tiver sido bloqueada via servidor
                     mensagem_confirmacao = "Lixeira desbloqueada";
-                } else{
+                } else{ // Caso a lixeira ja esteja desbloqueada
                     mensagem_confirmacao = "A lixeira já está desbloqueada ou ocorreu algum problema na sua solicitação!";
                 }
             }
             
             nuvem_receber.close();
             nuvem_enviar.close();
-            nuvem.close(); 
-                        
+            nuvem.close();                         
         }
         return mensagem_confirmacao;
     }
-    
-    public void alterarOrdem(int codigoCaminhao, int codigoLixeira, int ordem) throws IOException, ClassNotFoundException{
-    String mensagem_confirmacao = "";
-        try(Socket nuvem = new Socket("localhost", 40000)){                                                
-            ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
-            JSONObject json = new JSONObject();
-            json.put("cliente", "Administrador");
-            json.put("operacao", "ALTERAR_ORDEM");
-            json.put("caminhao", codigoCaminhao);
-            json.put("lixeira", codigoLixeira);
-            json.put("ordem", ordem);
-            
-            String dados = json.toString();
-            nuvem_enviar.writeObject(dados);
-            nuvem_enviar.flush();                                    
-            /** Recebimento dos dados da solicitação */
-            ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
-            dados = (String) nuvem_receber.readObject();
-            JSONObject requisicao = new JSONObject(dados);            
-                                                                       
-            if(requisicao.getBoolean("resposta")){
-                
-            }
-            
-            nuvem_receber.close();
-            nuvem_enviar.close();
-            nuvem.close(); 
-                        
-        }        
-    }
-    
+           
+    /**
+     * Metodo responsavel por retornar a lista de lixeiras de um dado caminhao
+     * @param codigo - inteiro que representa o codigo do caminhao a ser buscado
+     * @return lixeiras - JSONArray que possui as lixeiras a serem recolhidas por um dado caminhao
+     * @throws IOException
+     * @throws ClassNotFoundException 
+     */
     public static JSONArray listarLixeirasCaminhao(int codigo) throws IOException, ClassNotFoundException{
         String mensagem_confirmacao = "";
         try(Socket nuvem = new Socket("localhost", 40000)){                                                
+            /** Procedimento de envio da solicitacao */
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
             json.put("cliente", "Caminhao");
             json.put("operacao", "LISTAR_LIXEIRAS");
-            json.put("codigo", codigo);            
-            
+            json.put("codigo", codigo);                        
             String dados = json.toString();
             nuvem_enviar.writeObject(dados);
-            nuvem_enviar.flush();                                    
-            /** Recebimento dos dados da solicitação */
+            nuvem_enviar.flush();                  
+            
+            /** Procedimento de recebimento da resposta a solicitação */
             ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
             dados = (String) nuvem_receber.readObject();
-            JSONObject requisicao = new JSONObject(dados);            
-                                                                                   
+            JSONObject requisicao = new JSONObject(dados);
             JSONArray lixeiras = requisicao.getJSONArray("lixeiras");
             
             nuvem_receber.close();
@@ -205,28 +197,41 @@ public class Administrador {
         }
     }
     
-    public static void alterarOrdem(JSONArray ordem, int codigoCaminhao) throws IOException, ClassNotFoundException{
+    /**
+     * Metodo responsavel por alterar a ordem de todas as lixeiras de um dado
+     * caminhao de forma arbitraria conforme definido pelo administrador
+     * @param ordem - Array que contem as lixeiras organizadas na ordem 
+     * definidas pelo administrador e a ser alterada no Banco de Dados
+     * @param codigoCaminhao - Codigo do caminhao que tera a lista de lixeiras
+     * alterado
+     * @throws IOException
+     * @throws ClassNotFoundException 
+     */
+    public static boolean alterarOrdem(JSONArray ordem, int codigoCaminhao, String forma) throws IOException, ClassNotFoundException{
         try(Socket nuvem = new Socket("localhost", 40000)){                                                
+            /** Procedimento de envio da solicitacao ao servidor*/
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
-            json.put("cliente", "Caminhao");
+            json.put("cliente", "Administrador");
             json.put("operacao", "ALTERAR_ORDEM");
             json.put("ordem", ordem);            
-            json.put("codigo", codigoCaminhao);            
-            
+            json.put("codigo", codigoCaminhao);   
+            json.put("forma", forma);
             String dados = json.toString();
             nuvem_enviar.writeObject(dados);
-            nuvem_enviar.flush();                                    
-            /** Recebimento dos dados da solicitação */
+            nuvem_enviar.flush();                          
+            
+            /** Procedimento de recebimento dos dados da solicitação */
             ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
             dados = (String) nuvem_receber.readObject();
-            //JSONObject requisicao = new JSONObject(dados);            
-                                                                                   
-            //JSONArray lixeiras = requisicao.getJSONArray("lixeiras");
+            boolean resposta = false;
+            if(dados.equals("true"))
+                resposta = true;
             
             nuvem_receber.close();
             nuvem_enviar.close();
-            nuvem.close();             
+            nuvem.close();  
+            return resposta;
         }
     }
     
@@ -240,13 +245,12 @@ public class Administrador {
         int opcao = 1;
         Scanner leitor = new Scanner(System.in);
         do{
-            System.out.println("Escolha uma operação: "
+            System.out.println("\nEscolha uma operação: "
                     + "\n1. [Lixeira] Listar todas"                    
                     + "\n2. [Lixeira] Bloquear"
                     + "\n3. [Lixeira] Desbloquear"                    
                     + "\n4. [Caminhão] Ver informacoes"
-                    + "\n5. [Caminhao] Alterar Ordem Coleta"
-                    + "\n6. [Caminhao] Acompanhar em tempo real"
+                    + "\n5. [Caminhao] Alterar Ordem Coleta"                    
                     + "\n0. Sair");            
             opcao = leitor.nextInt();
             switch(opcao){
@@ -269,9 +273,10 @@ public class Administrador {
                 case 4:
                     System.out.println("Informe o código do caminhão");
                     int codigoCaminhao = leitor.nextInt();
-                    JSONObject caminhao = buscarCaminhao(codigoCaminhao);
-                    System.out.println(caminhao.toString());
-                    System.out.println("Caminhão: "
+                    JSONObject caminhao = buscarCaminhao(codigoCaminhao);                    
+                    System.out.println("=====================\n"
+                          + "       Caminhão"
+                         + "\n====================="
                             + "\nCódigo: " + caminhao.getInt("codigo")
                             + "\nCapacidade: " + getCapacidade(caminhao.getDouble("capacidadeAtual"), caminhao.getDouble("capacidadeMaxima")) +"%"
                             + "\nLista de Lixeiras:");                    
@@ -289,38 +294,57 @@ public class Administrador {
                     lixeiras = getLixeiras();
                     System.out.println("Informe o código do caminhão");
                     codigoCaminhao = leitor.nextInt();
-                    JSONArray lixeirasCaminhao = listarLixeirasCaminhao(codigoCaminhao);
-                    JSONArray lixeirasOrdenadas = new JSONArray();
-                    List<Object> codigos = new ArrayList();
-                    for(int i = 0; i < lixeiras.length(); i++){
-                        JSONObject atualLixeira =  (JSONObject) lixeiras.get(i);
-                        for(int j = 0; j < lixeirasCaminhao.length(); j++){
-                         int atualLixeiraCaminhao = (Integer) lixeirasCaminhao.get(j);
-                         if(atualLixeira.getInt("codigo") == atualLixeiraCaminhao){
-                             // Determina a ordem das lixeiras uma por uma                             
-                             boolean repetir = false;
-                             do{                                
-                             System.out.println("==== Lixeira ====");
-                             System.out.println("Código: " + atualLixeira.getInt("codigo"));
-                             double capacidade = getCapacidade(atualLixeira.getDouble("capacidadeAtual"), atualLixeira.getDouble("capacidadeMaxima"));
-                             System.out.println("Capacidade: " + capacidade + "%");
-                             System.out.println("Qual a ordem da lixeira?");                                                                                                                    
-                             int ordem = leitor.nextInt();                                
-                                if(codigos.contains(ordem)){
-                                    repetir = true;
-                                    System.out.println("Essa ordem já foi selecionada, tente novamente");
-                                } else {
-                                    codigos.add(ordem);
-                                    lixeirasOrdenadas.put(ordem, atualLixeira.getInt("codigo"));
-                                }
-                             }while(repetir);
-                             break;
-                         }
-                        }                        
-                    }                    
-                    lixeirasOrdenadas.remove(0);
-                    System.out.println(lixeirasOrdenadas.toString());
-                    alterarOrdem(lixeirasOrdenadas, codigoCaminhao);
+                    System.out.println("Ordenação: \n1. Capacidade \n2. Arbitrariamente");
+                    int ordenacaoOpcao = leitor.nextInt();
+                    boolean resposta = false;
+                    // Realiza a alteracao com base na capacidade
+                    if(ordenacaoOpcao == 1){
+                        resposta = alterarOrdem(null, codigoCaminhao, "capacidade");
+                    }
+                    // Realiza a alteracao da ordem de forma arbitraria
+                    if(ordenacaoOpcao == 2){
+                        JSONArray lixeirasCaminhao = listarLixeirasCaminhao(codigoCaminhao);
+                        JSONArray lixeirasOrdenadas = new JSONArray();
+                        List<Object> codigos = new ArrayList();
+                        for(int i = 0; i < lixeiras.length(); i++){
+                            JSONObject atualLixeira =  (JSONObject) lixeiras.get(i);
+                            for(int j = 0; j < lixeirasCaminhao.length(); j++){
+                             int atualLixeiraCaminhao = (Integer) lixeirasCaminhao.get(j);
+                             if(atualLixeira.getInt("codigo") == atualLixeiraCaminhao){
+                                 // Determina a ordem das lixeiras uma por uma                             
+                                 boolean repetir = false;
+                                 do{                                
+                                 System.out.println("==== Lixeira ====");
+                                 System.out.println("Código: " + atualLixeira.getInt("codigo"));
+                                 double capacidade = getCapacidade(atualLixeira.getDouble("capacidadeAtual"), atualLixeira.getDouble("capacidadeMaxima"));
+                                 System.out.println("Capacidade: " + capacidade + "%");
+                                 System.out.println("Qual a ordem da lixeira?");                                                                                                                    
+                                 int ordem = leitor.nextInt();                                
+                                    if(codigos.contains(ordem)){
+                                        repetir = true;
+                                        System.out.println("Essa ordem já foi selecionada, tente novamente");
+                                    } else {
+                                        codigos.add(ordem);
+                                        lixeirasOrdenadas.put(ordem, atualLixeira.getInt("codigo"));
+                                    }
+                                 }while(repetir);
+                                 break;
+                             }
+                            }                        
+                        }                    
+                        lixeirasOrdenadas.remove(0);
+                        System.out.println(lixeirasOrdenadas.toString());
+                        resposta = alterarOrdem(lixeirasOrdenadas, codigoCaminhao, "arbitraria");                        
+                    }
+                    
+                    if(ordenacaoOpcao > 2 || ordenacaoOpcao < 1)
+                        System.out.println("Opção inválida, tente novamente!");                    
+                    else{
+                        if(resposta)
+                            System.out.println("Ordem alterada com sucesso!");
+                        else
+                            System.out.println("A ordem não foi alterada, tente novamente!");
+                    }
                     break;
             }
         }while(opcao != 0);
