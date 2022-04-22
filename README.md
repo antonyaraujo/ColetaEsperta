@@ -12,7 +12,7 @@ Repositório criado para o programa que simula o sistema de coleta inteligente d
 
 ## Sumário
 1. [Pré-requisitos](#pré-requisitos)
-2. Deploys
+2. [Deploys](#deply-do-servidor)
 	- [Servidor (Nuvem)](#deploy-do-servidor)
 	- [Lixeira](#deploy-da-lixeira)
 	- [Administrador](#deploy-do-administrador)
@@ -24,29 +24,41 @@ Para fazer o deploy da aplicação é necessário que você possua previamente o
 ## Deploy do Servidor
 Para realizar o deploy do servidor em um container é necessário estar no diretório raiz do projeto, tendo issos sendo feito, deve-se: 
 
-> docker build -f Dockerfile_Nuvem -t coleta_esperta/nuvem .
+```
+docker build -f Dockerfile_Nuvem -t coleta_esperta/nuvem .
+```
 
 Esse comando criará o contâiner liberando as portas necessárias para o uso do servidor. Tendo isso feito deve-se criar a rede na qual o serviço irá ser utilizado
 
-> docker network create --driver=bridge  --subnet=172.16.0.0/25 --ip-range=172.16.0.0/25 --gateway=172.16.0.126
+```
+docker network create --driver=bridge  --subnet=172.16.0.0/25 --ip-range=172.16.0.0/25 --gateway=172.16.0.126
+```
 
 A rede criada suporta um total de 126 conexões, incluindo nelas a do próprio servidor. Para iniciar e adicionar o servidor a subrede criada, no endereço utilizado pela aplicação, deve-se utilizar o comando:
 
-> docker run --net=rede_coletaesperta --ip=172.16.0.1 -it --rm --name nuvem coleta_esperta/nuvem
+```
+docker run --net=rede_coletaesperta --ip=172.16.0.1 -it --rm --name nuvem coleta_esperta/nuvem
+```
 
 O servidor também pode ser executado em segundo plano, caso desejado: 
 
-> docker run -d --net=rede_coletaesperta --ip=172.16.0.1 -it --rm --name nuvem coleta_esperta/nuvem
+```
+docker run -d --net=rede_coletaesperta --ip=172.16.0.1 -it --rm --name nuvem coleta_esperta/nuvem
+```
 
 ## Deploy da Lixeira
 
 Para realizar o deploy da lixeira em um contâiner é necessário, inicialmente, criar o contâiner:
  
-> docker build -f Dockerfile_Lixeira -t coleta_esperta/lixeira .
+```
+docker build -f Dockerfile_Lixeira -t coleta_esperta/lixeira .
+```
 
 Criado o contâiner, deve-se executá-lo, adicionando-o a rede e, nesse caso, não há necessidade de especificar o ip, portanto dá-se o seguinte comando:
 
-> docker run --net=rede_coletaesperta -it --rm --name lixeira coleta_esperta/lixeira
+```
+docker run --net=rede_coletaesperta -it --rm --name lixeira coleta_esperta/lixeira
+```
 
 Como a proposta do sistema é que este possua várias lixeiras, é interessante criar vários contâineres como exibido acima alterando o nome dos contâineres para evitar conflitos de execução.
 
@@ -54,18 +66,26 @@ Como a proposta do sistema é que este possua várias lixeiras, é interessante 
 
 Para realizar o deploy do Administrador em um contâiner é necessário, inicialmente, criar o contâiner:
  
-> docker build -f Dockerfile_Administrador -t coleta_esperta/administrador .
+```
+docker build -f Dockerfile_Administrador -t coleta_esperta/administrador .
+```
 
 Criado o contâiner, deve-se executá-lo, adicionando-o a rede e, nesse caso, não há necessidade de especificar o ip, portanto dá-se o seguinte comando:
 
-> docker run --net=rede_coletaesperta -it --rm --name administrador coleta_esperta/administrador
+```
+docker run --net=rede_coletaesperta -it --rm --name administrador coleta_esperta/administrador
+```
 
 ## Deploy do Caminhão
 
 Para realizar o deploy do Caminhão em um contâiner é necessário, inicialmente, criar o contâiner:
  
-> docker build -f Dockerfile_Caminhao -t coleta_esperta/caminhao .
+```
+docker build -f Dockerfile_Caminhao -t coleta_esperta/caminhao .
+```
 
 Criado o contâiner, deve-se executá-lo, adicionando-o a rede e, nesse caso, não há necessidade de especificar o ip, portanto dá-se o seguinte comando:
 
-> docker run --net=rede_coletaesperta -it --rm --name caminhao coleta_esperta/caminhao
+```
+docker run --net=rede_coletaesperta -it --rm --name caminhao coleta_esperta/caminhao
+```

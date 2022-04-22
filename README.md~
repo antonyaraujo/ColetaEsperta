@@ -10,13 +10,13 @@
 # ColetaEsperta
 Repositório criado para o programa que simula o sistema de coleta inteligente de lixo em uma cidade inteligente (smartcity)  utilizando comunicação via Rede em uma arquitetura IoT centralizada.
 
-#Sumário
-[Pré-requisitos](#pre-requisitos)
-Deploys
-	[Servidor (Nuvem)](#deploy-do-servidor)
-	[Lixeira](#deploy-da-lixeira)
-	[Administrador](#deploy-do-administrador)
-	[Caminhão](#deploy-do-caminhao)
+## Sumário
+1. [Pré-requisitos](#pré-requisitos)
+2. Deploys
+	- [Servidor (Nuvem)](#deploy-do-servidor)
+	- [Lixeira](#deploy-da-lixeira)
+	- [Administrador](#deploy-do-administrador)
+	- [Caminhão](#deploy-do-caminhão)
 
 ## Pré-requisitos
 Para fazer o deploy da aplicação é necessário que você possua previamente o Docker instalado, as instruções para a instalação do docker estão em: .
