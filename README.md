@@ -11,17 +11,17 @@
 Repositório criado para o programa que simula o sistema de coleta inteligente de lixo em uma cidade inteligente (smartcity)  utilizando comunicação via Rede em uma arquitetura IoT centralizada.
 
 #Sumário
-[1. Pré-requisitos](/README.md)
-2. Deploys
-	[2.1. Servidor (Nuvem)](/README.md)
-	[2.2. Lixeira](/README.md)
-	[2.3. Administrador](/README.md)
-	[2.4. Caminhão](/README)
+[Pré-requisitos](#pre-requisitos)
+Deploys
+	[Servidor (Nuvem)](#deploy-do-servidor)
+	[Lixeira](#deploy-da-lixeira)
+	[Administrador](#deploy-do-administrador)
+	[Caminhão](#deploy-do-caminhao)
 
 ## Pré-requisitos
 Para fazer o deploy da aplicação é necessário que você possua previamente o Docker instalado, as instruções para a instalação do docker estão em: .
 
-## 1. Deploy do Servidor
+## Deploy do Servidor
 Para realizar o deploy do servidor em um container é necessário estar no diretório raiz do projeto, tendo issos sendo feito, deve-se: 
 
 > docker build -f Dockerfile_Nuvem -t coleta_esperta/nuvem .
