@@ -1,0 +1,6 @@
+FROM openjdk:11
+COPY . /usr/src/ColetaEsperta
+WORKDIR /usr/src/ColetaEsperta/dist
+
+CMD ["java", "-jar", "Administrador.jar"]
+

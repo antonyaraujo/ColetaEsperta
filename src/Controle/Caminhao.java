@@ -80,7 +80,7 @@ public class Caminhao {
      * @return Caminhao - objeto contendo os dados do caminhao criado, se for criado
      */
     public static Caminhao criarCaminhao(double capacidadeMaxima, double latitude, double longitude){
-        try(Socket nuvem = new Socket("localhost", 40000)){
+        try(Socket nuvem = new Socket("172.16.0.1", 40000)){
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                        
             //ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
             JSONObject json = new JSONObject();
@@ -115,7 +115,7 @@ public class Caminhao {
      * @return null - caso nao exista nenhum caminhao com o codigo informado
      */
     public static Caminhao buscarCaminhao(int codigo){
-         try(Socket nuvem = new Socket("localhost", 40000)){
+         try(Socket nuvem = new Socket("172.16.0.1", 40000)){
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
             json.put("cliente", "Caminhao");
@@ -154,7 +154,7 @@ public class Caminhao {
      * a serem recolhidas pelo caminhao
      */
     public static JSONArray getLixeiras(int codigoCaminhao){
-        try(Socket nuvem = new Socket("localhost", 40000)){
+        try(Socket nuvem = new Socket("172.16.0.1", 40000)){
             /** Realiza a solicitacao de busca das lixeiras do caminhao do codigo informado */
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
@@ -215,7 +215,7 @@ public class Caminhao {
      * @return false - Se a lixeira nao tiver sido coletada
      */
     public static boolean coletarLixeira(JSONObject lixeira, Caminhao caminhao){
-        try(Socket nuvem = new Socket("localhost", 40000)){
+        try(Socket nuvem = new Socket("172.16.0.1", 40000)){
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
             json.put("cliente", "Caminhao");
@@ -247,7 +247,7 @@ public class Caminhao {
      * @return false - Se o caminhao nao tiver sido esvaziado
      */
     public static boolean esvaziarCaminhao(Caminhao caminhao){
-        try(Socket nuvem = new Socket("localhost", 40000)){
+        try(Socket nuvem = new Socket("172.16.0.1", 40000)){
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
             json.put("cliente", "Caminhao");

@@ -26,7 +26,7 @@ public class Administrador {
      * @return lixeiras - Array que possui todas as lixeiras do banco de dados
      */
     public static JSONArray getLixeiras(){
-        try(Socket nuvem = new Socket("localhost", 40000)){
+        try(Socket nuvem = new Socket("172.16.0.1", 40000)){
             /** Procedimento de envio da solicitacao */
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
@@ -61,7 +61,7 @@ public class Administrador {
      * @return null - caso nenhum caminhao tenha sido encontrado no BD
      */
     public static JSONObject buscarCaminhao(int codigo){
-        try(Socket nuvem = new Socket("localhost", 40000)){
+        try(Socket nuvem = new Socket("172.16.0.1", 40000)){
             /** Procedimento de envio da solicitacao */
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
@@ -126,7 +126,7 @@ public class Administrador {
      */
     public static String alterarEstadoLixeira(int codigo, boolean estado) throws IOException, ClassNotFoundException{
         String mensagem_confirmacao = "";
-        try(Socket nuvem = new Socket("localhost", 40000)){                                                
+        try(Socket nuvem = new Socket("172.16.0.1", 40000)){                                                
             /** Procedimento de envio da solicitacao */
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
@@ -173,7 +173,7 @@ public class Administrador {
      */
     public static JSONArray listarLixeirasCaminhao(int codigo) throws IOException, ClassNotFoundException{
         String mensagem_confirmacao = "";
-        try(Socket nuvem = new Socket("localhost", 40000)){                                                
+        try(Socket nuvem = new Socket("172.16.0.1", 40000)){                                                
             /** Procedimento de envio da solicitacao */
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
@@ -208,7 +208,7 @@ public class Administrador {
      * @throws ClassNotFoundException 
      */
     public static boolean alterarOrdem(JSONArray ordem, int codigoCaminhao, String forma) throws IOException, ClassNotFoundException{
-        try(Socket nuvem = new Socket("localhost", 40000)){                                                
+        try(Socket nuvem = new Socket("172.16.0.1", 40000)){                                                
             /** Procedimento de envio da solicitacao ao servidor*/
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();

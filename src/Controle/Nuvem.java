@@ -214,7 +214,7 @@ public class Nuvem {
     try {
       // Instancia o ServerSocket ouvindo a porta 12345
       ServerSocket servidor = new ServerSocket(40000);
-      System.out.println("Servidor ouvindo a porta 40000");
+      System.out.println("Servidor ouvindo a porta 40000 - " + servidor.getInetAddress().getHostAddress());
       while(true) {
         // o método accept() bloqueia a execução até que
         // o servidor receba um pedido de conexão

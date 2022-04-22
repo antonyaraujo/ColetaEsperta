@@ -111,7 +111,7 @@ public class Lixeira extends Thread{
      * @return null - se a lixeira nao tiver sido criada no banco de dados pelo servidor
      */
     public static Lixeira criarLixeira(double capacidadeMaxima, double latitude, double longitude){
-        try(Socket nuvem = new Socket("localhost", 40000)){
+        try(Socket nuvem = new Socket("172.16.0.1", 40000)){
             /** Procedimento de envio da solicitacao de criacao da Lixeira*/
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();
@@ -147,7 +147,7 @@ public class Lixeira extends Thread{
      * @return false - se a operacao (adicao/remocao) nao tiver sido realizada
      */
     public boolean alterarCapacidade(double quantidade, String alteracao){                
-        try(Socket nuvem = new Socket("localhost", 40000)){
+        try(Socket nuvem = new Socket("172.16.0.1", 40000)){
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                        
             //ObjectInputStream nuvem_receber = new ObjectInputStream(nuvem.getInputStream());
             JSONObject json = new JSONObject();
@@ -186,7 +186,7 @@ public class Lixeira extends Thread{
      * @throws ClassNotFoundException 
      */
     public Lixeira buscarLixeira(int codigo) throws IOException, ClassNotFoundException{
-        try(Socket nuvem = new Socket("localhost", 40000)){                                                
+        try(Socket nuvem = new Socket("172.16.0.1", 40000)){                                                
             /** Realiza o envio de requisicao para o servidor da lixeira a ser buscada*/
             ObjectOutputStream nuvem_enviar = new ObjectOutputStream(nuvem.getOutputStream());                                    
             JSONObject json = new JSONObject();

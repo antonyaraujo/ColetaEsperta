@@ -1,0 +1,7 @@
+FROM openjdk:11
+COPY . /usr/src/ColetaEsperta
+WORKDIR /usr/src/ColetaEsperta/dist
+
+EXPOSE 40000
+CMD ["java", "-jar", "Nuvem.jar"]
+
